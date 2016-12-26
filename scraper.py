@@ -6,6 +6,14 @@ import re
 
 # tracks[0].find(True, attrs={"class" : "chartlist-ellipsis-wrap"})
 
+def string_or_none(span):
+    if span is not None:
+        result = span.string
+        if result is not None:
+            return result
+
+    return None
+
 
 def get_scrobbles(page_soup):
     '''
@@ -21,7 +29,7 @@ def get_scrobbles(page_soup):
 def scrobble_t_info(scrobble):
     t_info_sieve = "chartlist-ellipsis-wrap"
     result = scrobble.find(True, attrs={"class" : t_info_sieve})
-    if result:
+    if result is not None:
         return result
     else:
         return None
@@ -31,8 +39,30 @@ def t_info_artist(t_info):
     '''
     t_info_artist: takes a t_info (retrieved from a scrobble)
     and returns the artist name from the t_info upon success
+
     returns None upon failure
     '''
+    artist_sieve = "chartlist-artists"
+    span = t_info.find(True, attrs={"class" : artist_sieve})
+    if span is not None:
+        link = span.a
+        return string_or_none(link)
+
+    return None
+
+
+def t_info_spacer(t_info):
+    '''
+    t_info_spacer: takes a t_info (retrieved from a scrobble)
+    and returns the spacer used to separate the artist name from
+    the track name in the combined artist track chunk
+
+    returns None upon failure
+    '''
+    spacer_class = "artist-name-spacer"
+    span = t_info.find(True, attrs={"class" : spacer_class})
+
+    return string_or_none(span)
 
 
 def t_info_song(t_info):
@@ -40,7 +70,12 @@ def t_info_song(t_info):
     t_info_song: takes a t_info (retrieved from a scrobble)
     and returns the song name from the t_info upon success
     returns None upon failure
-    '''    
+    '''
+
+    track_sieve = "link-block-target"
+    span = t_info.find(True, attrs={"class" : track_sieve})
+
+    return string_or_none(span)
 
 
 def scrobble_time(scrobble):
