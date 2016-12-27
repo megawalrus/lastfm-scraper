@@ -78,11 +78,22 @@ def t_info_song(t_info):
     return string_or_none(span)
 
 
-def scrobble_time(scrobble):
+def scrobble_timestamp(scrobble):
     '''
-    takes a scrobble and returns the timestamp of the scrobble
+    scrobble_timestamp: takes a scrobble and returns the timestamp
+    of the scrobble
+
     returns None upon failure
     '''
+    timestamp_sieve = "chartlist-delete"
+    span = scrobble.find(True, attrs={"class" : timestamp_sieve})
+    time_tag = span.find(True, attrs={"name" : "timestamp"})
+    pattern = re.compile("[0-9]+")
+    find = re.search(pattern, str(time_tag))
+    if find is not None:
+        return find.group(0)
+    else:
+        return None
 
 
 def get_tracks(page_soup):
