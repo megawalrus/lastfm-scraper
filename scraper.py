@@ -96,11 +96,25 @@ def scrobble_timestamp(scrobble):
         return None
 
 
-def get_tracks(page_soup):
+def new_listen(artist, track, time):
+    if artist is None or track is None or time is None:
+        return None
+
+    listen = {}
+    listen["artist"] = artist
+    listen["track"] = track
+    listen["time"] = time
+
+    return listen
+
+
+def get_listens(page_soup):
     '''
-    get_tracks: takes a soup object from the html of a last fm scrobbles
-    list page, and returns a list of 'tracks'
+    get_listens: takes a soup object from the html of a last fm scrobbles
+    list page, and returns a list of 'listens'
     '''
+
+    scrobbles = get_scrobbles(page_soup)
 
     
 
