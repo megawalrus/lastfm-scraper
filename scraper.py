@@ -1,10 +1,6 @@
 from bs4 import BeautifulSoup
-import re
+import requests
 
-# sections = soup.find_all(True, attrs={"class" : "tracklist-section"})
-# tracks = sections[0].find_all(True, attrs={"class" : " js-link-block js-lazy-buylinks-focus-container "})
-
-# tracks[0].find(True, attrs={"class" : "chartlist-ellipsis-wrap"})
 
 def string_or_none(span):
     if span is not None:
@@ -85,15 +81,15 @@ def scrobble_timestamp(scrobble):
 
     returns None upon failure
     '''
-    timestamp_sieve = "chartlist-delete"
-    span = scrobble.find(True, attrs={"class" : timestamp_sieve})
-    time_tag = span.find(True, attrs={"name" : "timestamp"})
-    pattern = re.compile("[0-9]+")
-    find = re.search(pattern, str(time_tag))
-    if find is not None:
-        return find.group(0)
-    else:
-        return None
+    time_string = None
+    timestamp_sieve = "chartlist-timestamp"
+    td = scrobble.find(True, attrs={"class" : timestamp_sieve})
+    if td is not None:
+        span = td.span
+        if span is not None:
+            time_string = span.get("title")
+
+    return time_string
 
 
 def new_listen(artist, track, time):
@@ -108,14 +104,80 @@ def new_listen(artist, track, time):
     return listen
 
 
+def get_next_page(page_soup, prev_url):
+    '''
+    get_next_page: takes a BeautifulSoup tree representing
+    a last.fm page, and returns the link to the next page
+    of records of scrobbles
+    '''
+    href = None
+    pagination_filter = "pagination"
+    span = page_soup.find(True, attrs={"class" : pagination_filter})
+    if span is not None:
+        next_filter = "next"
+        li = span.find(True, attrs={"class" : next_filter})
+        if li is not None:
+            a = li.a
+            if a is not None:
+                href = a.get('href')
+
+    if href is not None:
+        if href[0] is '?':
+            chunks = prev_url.split('?')
+            new = chunks[0] + "?" + href[1:]
+            href = new
+
+    return href 
+
+
 def get_listens(page_soup):
     '''
     get_listens: takes a soup object from the html of a last fm scrobbles
     list page, and returns a list of 'listens'
     '''
+    listen_list = []
 
     scrobbles = get_scrobbles(page_soup)
+    for scrobble in scrobbles:
+        t_info = scrobble_t_info(scrobble)
+        artist = t_info_artist(t_info)
+        song = t_info_song(t_info)
+        time = scrobble_timestamp(scrobble)
+        listen = new_listen(artist, song, time)
+        listen_list.append(listen)
 
-    
+    return listen_list
 
 
+def scrape_page(url):
+    page = requests.get(url)
+    soup = BeautifulSoup(page.content, 'html.parser')
+    listens = get_listens(soup)
+    next_page = get_next_page(soup, url)
+
+    return (listens, next_page)
+
+
+def get_five(url):
+    listens = []
+    count = 0
+    curr_url = url
+    while(count < 5):
+        count += 1
+        new_listens, next_page = scrape_page(curr_url)
+        listens += new_listens
+        curr_url = next_page
+
+    return (len(listens),  listens)
+
+def get_all(url):
+    listens = []
+    # count = 0
+    curr_url = url
+    while(curr_url is not None):
+        # count += 1
+        new_listens, next_page = scrape_page(curr_url)
+        listens += new_listens
+        curr_url = next_page
+
+    return (len(listens),  listens)
