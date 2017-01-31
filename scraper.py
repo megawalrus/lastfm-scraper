@@ -81,15 +81,15 @@ def scrobble_timestamp(scrobble):
 
     returns None upon failure
     '''
-    time_string = None
-    timestamp_sieve = "chartlist-timestamp"
-    td = scrobble.find(True, attrs={"class" : timestamp_sieve})
-    if td is not None:
-        span = td.span
-        if span is not None:
-            time_string = span.get("title")
+    timestamp = scrobble["data-timestamp"]
+    ts = None
+    if timestamp is not None:
+        try:
+            ts = int(timestamp)
+        except ValueError:
+            return None
 
-    return time_string
+    return ts
 
 
 def new_listen(artist, track, time):
@@ -170,7 +170,26 @@ def get_five(url):
 
     return (len(listens),  listens)
 
-def get_all(url):
+'''
+Scrobbles -
+
+A scrobble is just a dictionary with the keys:
+"artist", "time", and "track"
+The values associated with the artist and track keys are strings,
+and the value associated with the time key is a positive integer
+representing the time in seconds since the beginning of the Epoch
+'''
+
+def get_all_scrobbles(url):
+    '''
+    get_all_scrobbles - takes a string representation of a url for
+                        a user's last.fm library page - i.e.
+                        http://www.last.fm/user/{USERNAME}/library
+                        and returns a tuple of the number of scrobbles
+                        retrieved and a list of the scrobbles
+                        Scrobbles are dictionaries with the keys
+                        artist, time, and track
+    '''
     listens = []
     # count = 0
     curr_url = url
